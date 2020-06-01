@@ -1,7 +1,8 @@
 (ns kafka-test.core
   (:gen-class)
   (:require [clojure.java.io :as io]
-            [clojure.string :as str])
+            [clojure.string :as str]
+            [clj-log4j2.core :as log])
   (:import [java.util Properties]
            [org.apache.kafka.clients.producer ProducerRecord ProducerConfig KafkaProducer]
            [org.apache.kafka.clients.consumer ConsumerConfig KafkaConsumer ConsumerRecords ConsumerRecord]
@@ -37,7 +38,6 @@
 
 (defn consume
   [records stopwords]
-  (prn (.count records))
   (mapv
    (fn
      [record]
@@ -47,15 +47,18 @@
           (when (not (contains? stopwords word))
             (swap! topics update word #(-> % (or 0) inc) ))))
       (str/split (.value record) #"\s")))
-   (iterator-seq (.iterator records))))
+   (iterator-seq (.iterator records)))
+  (spit "count-words.txt" @topics))
 
 (defn produce
-  []
-  (with-open [rdr (io/reader (io/resource "MovieSummaries/plot_summaries-1.txt"))]
+  [resource-file]
+  (with-open [rdr (io/reader (io/resource resource-file))]
     (let [listen-producer (listen-producer)]
       (doseq [line (line-seq rdr)]
         (let [[key plot] (str/split line #"\t")]
-          (.send listen-producer (ProducerRecord. "voice" key plot ))))
+          (log/info  key)
+          (.send listen-producer (ProducerRecord. "voice" key plot ))
+          ))
       (.close listen-producer))))
 
 (defn consume-records
@@ -67,3 +70,9 @@
     (.subscribe listen-consumer '("voice"))
     (while true
       (consume (.poll listen-consumer (Duration/ofMillis (* 100 60))) stopwords))))
+
+(defn -main
+  [command & {:strs [--topic --file]}]
+  (cond
+    (= command "produce") (produce --file)
+    (= command "consume") (consume-records)))

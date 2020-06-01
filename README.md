@@ -4,41 +4,14 @@ FIXME: description
 
 ## Installation
 
-Download from http://example.com/FIXME.
-
+Install kafka
+setup server1.properties in kafka config `listeners=PLAINTEXT://:9092` 
 ## Usage
 
-FIXME: explanation
+start zookeeper -> $KAFKA_HOME/bin/zookeeper-server-start.sh $KAFKA_CONFIG/zookeeper.properties
+start  kafka -> $KAFKA_HOME/bin/kafka-server-start.sh config/server1.properties 
 
-    $ java -jar kafka-test-0.1.0-standalone.jar [args]
+push data to kafka -> lein run produce --file MovieSummaries/plot_summaries-1.txt
+consume data -> lein run consume
 
-## Options
-
-FIXME: listing of options this app accepts.
-
-## Examples
-
-...
-
-### Bugs
-
-...
-
-### Any Other Sections
-### That You Think
-### Might be Useful
-
-## License
-
-Copyright © 2019 FIXME
-
-This program and the accompanying materials are made available under the
-terms of the Eclipse Public License 2.0 which is available at
-http://www.eclipse.org/legal/epl-2.0.
-
-This Source Code may also be made available under the following Secondary
-Licenses when the conditions for such availability set forth in the Eclipse
-Public License, v. 2.0 are satisfied: GNU General Public License as published by
-the Free Software Foundation, either version 2 of the License, or (at your
-option) any later version, with the GNU Classpath Exception which is available
-at https://www.gnu.org/software/classpath/license.html.
+ 
