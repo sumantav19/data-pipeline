@@ -9,10 +9,10 @@
            [java.util Arrays]
            [java.time Duration]))
 
-(defn listen-producer
-  []
+(defn producer-prop
+  [host]
   (let [newProps (Properties.)]
-    (.put newProps ProducerConfig/BOOTSTRAP_SERVERS_CONFIG "localhost:9092")
+    (.put newProps ProducerConfig/BOOTSTRAP_SERVERS_CONFIG host)
     (.put newProps "acks", "all")
     (.put newProps "retries" (int 0))
     (.put newProps "batch.size" (int 16384))
@@ -23,9 +23,9 @@
     (KafkaProducer. newProps)))
 
 (defn consumer-prop
-  []
+  [host]
   (let [consumer-prop (Properties.)]
-    (.put consumer-prop "bootstrap.servers" "localhost:9092")
+    (.put consumer-prop "bootstrap.servers" host)
     (.put consumer-prop "group.id" "text-reading-group")
     (.put consumer-prop "enable.auto.commit" true)
     (.put consumer-prop "auto.commit.interval.ms" (int 1000))
@@ -51,20 +51,20 @@
   (spit "count-words.txt" @topics))
 
 (defn produce
-  [resource-file]
+  [resource-file host]
   (with-open [rdr (io/reader (io/resource resource-file))]
-    (let [listen-producer (listen-producer)]
+    (let [listen-producer (producer-prop host)]
       (doseq [line (line-seq rdr)]
         (let [[key plot] (str/split line #"\t")]
           (log/info  key)
-          (.send listen-producer (ProducerRecord. "voice" key plot ))
+          (prn  (.send listen-producer (ProducerRecord. "voice" key plot )))
           ))
       (.close listen-producer))))
 
 (defn consume-records
   "I don't do a whole lot ... yet."
-  []
-  (let [listen-consumer (KafkaConsumer. (consumer-prop))
+  [host]
+  (let [listen-consumer (KafkaConsumer. (consumer-prop host))
         stopwords (with-open [rdr (io/reader (io/resource "stopword.txt"))]
                     (set (mapv #(-> % str/lower-case str/trim) (line-seq rdr))))]
     (.subscribe listen-consumer '("voice"))
@@ -72,7 +72,7 @@
       (consume (.poll listen-consumer (Duration/ofMillis (* 100 60))) stopwords))))
 
 (defn -main
-  [command & {:strs [--topic --file]}]
+  [command & {:strs [--topic --file --host]}]
   (cond
-    (= command "produce") (produce --file)
-    (= command "consume") (consume-records)))
+    (= command "produce") (produce --file --host)
+    (= command "consume") (consume-records --host)))
